@@ -24,9 +24,15 @@ def ask_gemini(parts, retries=3):
     for attempt in range(retries):
         try:
             return st.session_state.chat.send_message(parts).text
+        def ask_gemini(parts, retries=5):
+    for attempt in range(retries):
+        try:
+            return st.session_state.chat.send_message(parts).text
         except Exception as error:
-            if "503" in str(error) and attempt < retries - 1:
-                time.sleep(2)
+            if ("503" in str(error) or "UNAVAILABLE" in str(error)) and attempt < retries - 1:
+                time.sleep(2 * (attempt + 1))  # 2s, 4s, 6s wait karega
+                continue
+            return f"Sorry, something went wrong: {error}"
                 continue
             return f"Sorry, something went wrong: {error}"
 if "onboarded" not in st.session_state:
