@@ -4,37 +4,44 @@ import streamlit as st
 from google import genai
 from google.genai import types
 from prompts import SUMMARY_REQUEST_PROMPT, SYSTEM_PROMPT, WELCOME_MESSAGE_TEMPLATE
+
 MODEL_NAME = "gemini-3.8-flash"
 st.set_page_config(page_title="MacroSnap", page_icon="??")
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
+
+
 @st.cache_resource
 def get_gemini_client():
     return genai.Client(api_key=GEMINI_API_KEY)
+
+
 gemini_client = get_gemini_client()
+
+
 def render_message(message):
     with st.chat_message(message["role"]):
         if message["kind"] == "text":
             st.write(message["content"])
         elif message["kind"] == "image":
             st.image(message["content"])
+
+
 def add_message(role, kind, content):
     st.session_state.messages.append({"role": role, "kind": kind, "content": content})
     render_message(st.session_state.messages[-1])
-def ask_gemini(parts, retries=3):
-    for attempt in range(retries):
-        try:
-            return st.session_state.chat.send_message(parts).text
-        def ask_gemini(parts, retries=5):
+
+
+def ask_gemini(parts, retries=5):
     for attempt in range(retries):
         try:
             return st.session_state.chat.send_message(parts).text
         except Exception as error:
             if ("503" in str(error) or "UNAVAILABLE" in str(error)) and attempt < retries - 1:
-                time.sleep(2 * (attempt + 1))  # 2s, 4s, 6s wait karega
+                time.sleep(2 * (attempt + 1))
                 continue
             return f"Sorry, something went wrong: {error}"
-                continue
-            return f"Sorry, something went wrong: {error}"
+
+
 if "onboarded" not in st.session_state:
     st.title("?? MacroSnap")
     st.caption("Snap it. Track it. Get your nutrition summary on WhatsApp.")
@@ -61,6 +68,7 @@ if "onboarded" not in st.session_state:
             st.session_state.onboarded = True
             st.rerun()
     st.stop()
+
 header_col, button_col = st.columns([5, 3], vertical_alignment="center")
 with header_col:
     st.title("?? MacroSnap")
@@ -73,17 +81,20 @@ with button_col:
             wa_link = f"https://wa.me/{st.session_state.whatsapp_number}?text={encoded_summary}"
             st.session_state.wa_link = wa_link
             st.session_state.summary_text = summary
+
 if "wa_link" in st.session_state:
     st.success("? Summary Generated!")
     st.link_button("?? Click here to Open in WhatsApp", st.session_state.wa_link, use_container_width=True)
     with st.expander("Preview Summary"):
         st.write(st.session_state.summary_text)
+
 st.caption(f"Logged in as **{st.session_state.name}** | Target WhatsApp: **+{st.session_state.whatsapp_number}**")
 if not st.session_state.messages:
     add_message("assistant", "text", WELCOME_MESSAGE_TEMPLATE.format(name=st.session_state.name))
 else:
     for message in st.session_state.messages:
         render_message(message)
+
 user_input = st.chat_input(
     "Ask a nutrition question, or attach a photo of your meal",
     accept_file=True,
