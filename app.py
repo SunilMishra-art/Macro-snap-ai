@@ -1,12 +1,14 @@
-import urllib.parse
+import os
 import time
+import urllib.parse
 import streamlit as st
 from google import genai
 from google.genai import types
 from prompts import SUMMARY_REQUEST_PROMPT, SYSTEM_PROMPT, WELCOME_MESSAGE_TEMPLATE
 
-MODEL_NAME = "gemini-3.8-flash"
-st.set_page_config(page_title="MacroSnap", page_icon="??")
+# Use gemini-1.5-flash for high quota and stable performance
+MODEL_NAME = "gemini-1.5-flash"
+st.set_page_config(page_title="MacroSnap", page_icon="🥗")
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
 
@@ -34,16 +36,17 @@ def add_message(role, kind, content):
 def ask_gemini(parts, retries=5):
     for attempt in range(retries):
         try:
-            return st.session_state.chat.send_message(parts).text
+            response = st.session_state.chat.send_message(parts)
+            return response.text
         except Exception as error:
-            if ("503" in str(error) or "UNAVAILABLE" in str(error)) and attempt < retries - 1:
+            if ("503" in str(error) or "UNAVAILABLE" in str(error) or "429" in str(error)) and attempt < retries - 1:
                 time.sleep(2 * (attempt + 1))
                 continue
             return f"Sorry, something went wrong: {error}"
 
 
 if "onboarded" not in st.session_state:
-    st.title("?? MacroSnap")
+    st.title("🥗 MacroSnap")
     st.caption("Snap it. Track it. Get your nutrition summary on WhatsApp.")
     with st.form("onboarding_form"):
         name = st.text_input("Your name")
@@ -52,7 +55,7 @@ if "onboarded" not in st.session_state:
             placeholder="+91XXXXXXXXXX",
             help="Your summary will be formatted for this number.",
         )
-        submitted = st.form_submit_button("Let's go ??")
+        submitted = st.form_submit_button("Let's go 🚀")
     if submitted:
         if not name.strip() or not whatsapp_number.strip():
             st.warning("Please fill in both your name and WhatsApp number.")
@@ -71,20 +74,22 @@ if "onboarded" not in st.session_state:
 
 header_col, button_col = st.columns([5, 3], vertical_alignment="center")
 with header_col:
-    st.title("?? MacroSnap")
+    st.title("🥗 MacroSnap")
 with button_col:
     send_disabled = len(st.session_state.messages) <= 1
-    if st.button("?? Generate WhatsApp Summary", disabled=send_disabled, use_container_width=True):
+    if st.button("📤 Generate WhatsApp Summary", disabled=send_disabled, use_container_width=True):
         with st.spinner("Summarizing your day..."):
             summary = ask_gemini([SUMMARY_REQUEST_PROMPT])
-            encoded_summary = urllib.parse.quote(f"Hi {st.session_state.name}!\n\nHere is your MacroSnap Diet Summary:\n\n{summary}")
+            encoded_summary = urllib.parse.quote(
+                f"Hi {st.session_state.name}!\n\nHere is your MacroSnap Diet Summary:\n\n{summary}"
+            )
             wa_link = f"https://wa.me/{st.session_state.whatsapp_number}?text={encoded_summary}"
             st.session_state.wa_link = wa_link
             st.session_state.summary_text = summary
 
 if "wa_link" in st.session_state:
-    st.success("? Summary Generated!")
-    st.link_button("?? Click here to Open in WhatsApp", st.session_state.wa_link, use_container_width=True)
+    st.success("✅ Summary Generated!")
+    st.link_button("👉 Click here to Open in WhatsApp", st.session_state.wa_link, use_container_width=True)
     with st.expander("Preview Summary"):
         st.write(st.session_state.summary_text)
 
