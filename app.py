@@ -6,8 +6,8 @@ from google import genai
 from google.genai import types
 from prompts import SUMMARY_REQUEST_PROMPT, SYSTEM_PROMPT, WELCOME_MESSAGE_TEMPLATE
 
-# Use gemini-1.5-flash for high quota and stable performance
-MODEL_NAME = "gemini-1.5-flash"
+# Stable fast multimodal model for Google GenAI SDK
+MODEL_NAME = "gemini-2.5-flash"
 st.set_page_config(page_title="MacroSnap", page_icon="🥗")
 GEMINI_API_KEY = st.secrets["GEMINI_API_KEY"]
 
@@ -121,3 +121,4 @@ if user_input:
     with st.spinner("Analyzing nutrition..."):
         answer = ask_gemini(parts)
     add_message("assistant", "text", answer)
+
